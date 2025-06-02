@@ -42,8 +42,5 @@ fmt-check:
 		exit 1; \
 	fi
 
-lint:
-	golangci-lint run
-
 clean:
 	rm -rf $(BIN_DIR)/
