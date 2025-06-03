@@ -181,3 +181,30 @@ containers:
 		t.Fatal("expected YAML parsing error, got nil")
 	}
 }
+
+func TestParseManifest_DefaultValues(t *testing.T) {
+	yamlContent := `
+name: test
+containers:
+  - name: app
+    host: localhost
+    image: busybox
+`
+
+	tmpDir := t.TempDir()
+	file := filepath.Join(tmpDir, "default.yaml")
+
+	if err := os.WriteFile(file, []byte(yamlContent), 0644); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
+
+	m, err := ParseManifest(file)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	c := m.Containers[0]
+	if c.Entrypoint != "" || c.Cmd != "" || len(c.Environment) > 0 || len(c.Options) > 0 || len(c.Ports) > 0 {
+		t.Error("expected default empty values for optional fields")
+	}
+}
