@@ -24,6 +24,7 @@ type DockerClient interface {
 	ContainerKill(ctx context.Context, containerID, signal string) error
 	ContainerRestart(ctx context.Context, containerID string, options container.StopOptions) error
 	ContainerRemove(ctx context.Context, containerID string, options container.RemoveOptions) error
+	ContainerInspect(ctx context.Context, containerID string) (container.InspectResponse, error)
 
 	ImageList(ctx context.Context, options image.ListOptions) ([]image.Summary, error)
 	ImagePull(ctx context.Context, refStr string, options image.PullOptions) (io.ReadCloser, error)
@@ -133,6 +134,15 @@ func (d *DockerRunner) PullImage(name string) error {
 	}
 
 	return nil
+}
+
+func (d *DockerRunner) State(name string) (string, error) {
+	ctx := context.Background()
+	info, err := d.cli.ContainerInspect(ctx, name)
+	if err != nil {
+		return "", err
+	}
+	return info.State.Status, nil
 }
 
 func toEnvList(env map[string]string) []string {

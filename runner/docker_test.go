@@ -83,6 +83,19 @@ func (m *mockDockerClient) ImagePull(ctx context.Context, ref string, opts image
 	return io.NopCloser(bytes.NewBufferString("pulled")), nil
 }
 
+func (m *mockDockerClient) ContainerInspect(ctx context.Context, containerID string) (container.InspectResponse, error) {
+	if containerID == "invalid" {
+		return container.InspectResponse{}, errors.New("inspect failed")
+	}
+	return container.InspectResponse{
+		ContainerJSONBase: &container.ContainerJSONBase{
+			State: &container.State{
+				Status: container.StateRunning,
+			},
+		},
+	}, nil
+}
+
 func TestDockerRunner_Run(t *testing.T) {
 	mock := &mockDockerClient{}
 	runner := &DockerRunner{cli: mock}
@@ -214,5 +227,28 @@ func TestDockerRunner_Remove(t *testing.T) {
 	err := runner.Remove("test")
 	if err != nil {
 		t.Errorf("expected remove to succeed, got error: %v", err)
+	}
+}
+
+func TestDockerRunner_State(t *testing.T) {
+	mock := &mockDockerClient{}
+	runner := &DockerRunner{cli: mock}
+
+	state, err := runner.State("test")
+	if err != nil {
+		t.Errorf("expected state to succeed, got error: %v", err)
+	}
+	if state != container.StateRunning {
+		t.Errorf("expected state to be running, got %s", state)
+	}
+}
+
+func TestDockerRunner_State_Fail(t *testing.T) {
+	mock := &mockDockerClient{}
+	runner := &DockerRunner{cli: mock}
+
+	_, err := runner.State("invalid")
+	if err == nil {
+		t.Errorf("expected state to fail")
 	}
 }
