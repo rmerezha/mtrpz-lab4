@@ -159,3 +159,25 @@ func TestContainerValidation(t *testing.T) {
 		}
 	}
 }
+
+func TestParseManifest_InvalidYAML(t *testing.T) {
+	invalidYAML := `
+name: test
+containers:
+  - name: app
+    host host1
+    image: nginx
+`
+
+	tmpDir := t.TempDir()
+	file := filepath.Join(tmpDir, "invalid.yaml")
+
+	if err := os.WriteFile(file, []byte(invalidYAML), 0644); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
+
+	_, err := ParseManifest(file)
+	if err == nil {
+		t.Fatal("expected YAML parsing error, got nil")
+	}
+}
