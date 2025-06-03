@@ -3,8 +3,10 @@ package runner
 import (
 	"context"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	"github.com/rmerezha/mtrpz-lab4/config"
+	"io"
 )
 
 const SIGKILL = "SIGKILL"
@@ -43,6 +45,29 @@ func (d *DockerRunner) Remove(name string) error {
 }
 
 func (d *DockerRunner) PullImage(name string) error {
-	// TODO
+	ctx := context.Background()
+	images, err := d.cli.ImageList(ctx, image.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, img := range images {
+		for _, tag := range img.RepoTags {
+			if tag == name {
+				return nil
+			}
+		}
+	}
+
+	out, err := d.cli.ImagePull(ctx, name, image.PullOptions{})
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(io.Discard, out)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
