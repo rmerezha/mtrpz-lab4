@@ -208,3 +208,26 @@ containers:
 		t.Error("expected default empty values for optional fields")
 	}
 }
+
+func TestParseManifest_FilePermissionDenied(t *testing.T) {
+	tmpDir := t.TempDir()
+	file := filepath.Join(tmpDir, "denied.yaml")
+
+	yamlContent := `
+name: test
+containers:
+  - name: app
+    host: localhost
+    image: nginx
+`
+
+	if err := os.WriteFile(file, []byte(yamlContent), 0000); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
+	defer os.Chmod(file, 0644)
+
+	_, err := ParseManifest(file)
+	if err == nil {
+		t.Fatal("expected permission denied error, got nil")
+	}
+}
