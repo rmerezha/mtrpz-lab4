@@ -8,4 +8,5 @@ type Runner interface {
 	Kill(name string) error
 	Restart(name string) error
 	Remove(name string) error
+	PullImage(name string) error
 }

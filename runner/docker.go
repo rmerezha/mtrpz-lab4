@@ -41,3 +41,8 @@ func (d *DockerRunner) Remove(name string) error {
 	// TODO
 	return nil
 }
+
+func (d *DockerRunner) PullImage(name string) error {
+	// TODO
+	return nil
+}
