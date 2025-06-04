@@ -18,15 +18,18 @@ type PollingListener struct {
 	mu           sync.Mutex
 	store        *ContainerStateStore
 	pollInterval time.Duration
+
+	Token string
 }
 
-func NewPollingListener(masterURL, host string, r runner.Runner, interval time.Duration) *PollingListener {
+func NewPollingListener(masterURL, host string, r runner.Runner, interval time.Duration, token string) *PollingListener {
 	return &PollingListener{
 		MasterURL:    masterURL,
 		Host:         host,
 		Runner:       r,
 		store:        NewContainerStateStore(),
 		pollInterval: interval,
+		Token:        token,
 	}
 }
 
@@ -46,7 +49,17 @@ func (pl *PollingListener) Listen(stopCh <-chan struct{}) {
 
 func (pl *PollingListener) checkAndApply() {
 	url := pl.MasterURL + "/api/v1/container?host=" + pl.Host
-	resp, err := http.Get(url)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Printf("PollingListener: failed to create request: %v", err)
+		return
+	}
+
+	req.Header.Set("Authorization", "Bearer "+pl.Token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("PollingListener: failed to GET containers: %v", err)
 		return

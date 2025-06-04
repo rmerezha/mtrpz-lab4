@@ -19,15 +19,17 @@ type StateWatcherListener struct {
 	mu           sync.Mutex
 	store        *ContainerStateStore
 	pollInterval time.Duration
+	Token        string
 }
 
-func NewStateWatcherListener(masterURL, host string, r runner.Runner, interval time.Duration) *StateWatcherListener {
+func NewStateWatcherListener(masterURL, host string, r runner.Runner, interval time.Duration, token string) *StateWatcherListener {
 	return &StateWatcherListener{
 		MasterURL:    masterURL,
 		Host:         host,
 		Runner:       r,
 		store:        NewContainerStateStore(),
 		pollInterval: interval,
+		Token:        token,
 	}
 }
 
@@ -46,19 +48,12 @@ func (sw *StateWatcherListener) Listen(stopCh <-chan struct{}) {
 }
 
 func (sw *StateWatcherListener) checkAndReport() {
-	// Вважаємо, що Runner знає імена контейнерів, які потрібно моніторити.
-	// Можливо, треба отримувати список контейнерів іншим способом.
-	// Для прикладу припустимо, що ми перевіряємо lastStates ключі, або їх треба завчасно задати.
-
 	sw.mu.Lock()
 	containerNames := make([]string, 0, len(sw.store.states))
 	for name := range sw.store.states {
 		containerNames = append(containerNames, name)
 	}
 	sw.mu.Unlock()
-
-	// Якщо lastStates порожній (перший запуск), то можна завантажити список контейнерів і ініціалізувати.
-	// Тут можна розширити логіку. Для простоти поки ігноруємо.
 
 	for _, name := range containerNames {
 		stateStr, err := sw.Runner.State(name)
@@ -100,7 +95,17 @@ func (sw *StateWatcherListener) sendStateUpdate(containerName string, state conf
 	}
 
 	url := sw.MasterURL + "/api/v1/state"
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(data))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+	if err != nil {
+		log.Printf("StateWatcherListener: failed to create request: %v", err)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+sw.Token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("StateWatcherListener: failed to send state update: %v", err)
 		return
