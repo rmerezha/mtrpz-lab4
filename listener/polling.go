@@ -16,7 +16,7 @@ type PollingListener struct {
 	Runner    runner.Runner
 
 	mu           sync.Mutex
-	lastStates   map[string]config.ContainerState
+	store        *ContainerStateStore
 	pollInterval time.Duration
 }
 
@@ -25,7 +25,7 @@ func NewPollingListener(masterURL, host string, r runner.Runner, interval time.D
 		MasterURL:    masterURL,
 		Host:         host,
 		Runner:       r,
-		lastStates:   make(map[string]config.ContainerState),
+		store:        NewContainerStateStore(),
 		pollInterval: interval,
 	}
 }
@@ -68,10 +68,10 @@ func (pl *PollingListener) checkAndApply() {
 	defer pl.mu.Unlock()
 
 	for _, cs := range containers {
-		prevState, known := pl.lastStates[cs.Config.Name]
+		prevState, known := pl.store.Get(cs.Config.Name)
 		if !known || prevState != cs.State {
 			log.Printf("PollingListener: container %s state changed from %s to %s", cs.Config.Name, prevState, cs.State)
-			pl.lastStates[cs.Config.Name] = cs.State
+			pl.store.Set(cs.Config.Name, cs.State)
 
 			pl.applyState(cs)
 		}
