@@ -80,8 +80,41 @@ func (p *Planner) AddManifest(m *config.Manifest) {
 		cs := &ContainerStatus{
 			ManifestName: m.Name,
 			Config:       c,
-			State:        StateCreated,
+			State:        StateNew,
 		}
 		p.storage[c.Host] = append(p.storage[c.Host], cs)
 	}
+}
+
+func (p *Planner) MarkManifestRemoving(name string) bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	found := false
+
+	for _, containers := range p.storage {
+		for _, cs := range containers {
+			if cs.ManifestName == name {
+				cs.State = StateRemoving
+				found = true
+			}
+		}
+	}
+
+	return found
+}
+
+func (p *Planner) ListContainersByManifest(name string) []*ContainerStatus {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	var result []*ContainerStatus
+	for _, containers := range p.storage {
+		for _, cs := range containers {
+			if name == "" || cs.ManifestName == name {
+				result = append(result, cs)
+			}
+		}
+	}
+	return result
 }
