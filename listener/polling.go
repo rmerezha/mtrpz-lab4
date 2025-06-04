@@ -81,10 +81,10 @@ func (pl *PollingListener) checkAndApply() {
 	defer pl.mu.Unlock()
 
 	for _, cs := range containers {
-		prevState, known := pl.store.Get(cs.Config.Name)
+		prevState, known := pl.Store.Get(cs.Config.Name)
 		if !known || prevState != cs.State {
 			log.Printf("PollingListener: container %s state changed from %s to %s", cs.Config.Name, prevState, cs.State)
-			pl.store.Set(cs.Config.Name, cs.State)
+			pl.Store.Set(cs.Config.Name, cs.State)
 
 			pl.applyState(cs)
 		}
