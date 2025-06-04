@@ -3,6 +3,9 @@ package api
 import (
 	"encoding/json"
 	"github.com/rmerezha/mtrpz-lab4/auth"
+	"github.com/rmerezha/mtrpz-lab4/config"
+	"gopkg.in/yaml.v3"
+	"io"
 	"net/http"
 
 	"github.com/rmerezha/mtrpz-lab4/planner"
@@ -64,7 +67,7 @@ func (s *Server) handleContainerAction(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	var req struct {
 		Action    string `json:"action"`
 		Host      string `json:"host"`
@@ -100,8 +103,37 @@ func (s *Server) handleContainerAction(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func (s *Server) handleManifestUp(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "failed to read body: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	var manifest config.Manifest
+	if err := yaml.Unmarshal(data, &manifest); err != nil {
+		http.Error(w, "invalid YAML: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := manifest.Validate(); err != nil {
+		http.Error(w, "invalid manifest: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	s.Planner.AddManifest(&manifest)
+	w.WriteHeader(http.StatusCreated)
+}
+
 func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/state", withAuth(s.Auth, s.handleUpdateState))
 	mux.HandleFunc("/api/v1/container", withAuth(s.Auth, s.handleListContainers))
 	mux.HandleFunc("/api/v1/container/action", withAuth(s.Auth, s.handleContainerAction))
+	mux.HandleFunc("/api/v1/manifest/up", withAuth(s.Auth, s.handleManifestUp))
 }
