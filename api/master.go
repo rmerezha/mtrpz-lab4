@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/rmerezha/mtrpz-lab4/auth"
 	"net/http"
 
 	"github.com/rmerezha/mtrpz-lab4/planner"
@@ -9,6 +10,7 @@ import (
 
 type Server struct {
 	Planner *planner.Planner
+	Auth    *auth.Manager
 }
 
 type StateUpdateRequest struct {
@@ -59,6 +61,6 @@ func (s *Server) handleListContainers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/api/v1/state", s.handleUpdateState)
-	mux.HandleFunc("/api/v1/container", s.handleListContainers)
+	mux.HandleFunc("/api/v1/state", withAuth(s.Auth, s.handleUpdateState))
+	mux.HandleFunc("/api/v1/container", withAuth(s.Auth, s.handleListContainers))
 }
