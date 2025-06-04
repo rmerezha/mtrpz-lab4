@@ -21,7 +21,7 @@ func setupPlanner() *Planner {
 func TestUpdateState_Success(t *testing.T) {
 	p := setupPlanner()
 
-	ok := p.UpdateState("node1", "web", StateRunning)
+	ok := p.UpdateState("node1", "web", config.StateRunning)
 	if !ok {
 		t.Fatal("expected UpdateState to return true")
 	}
@@ -31,8 +31,8 @@ func TestUpdateState_Success(t *testing.T) {
 	for _, c := range containers {
 		if c.Config.Name == "web" {
 			found = true
-			if c.State != StateRunning {
-				t.Errorf("expected state to be %q, got %q", StateRunning, c.State)
+			if c.State != config.StateRunning {
+				t.Errorf("expected state to be %q, got %q", config.StateRunning, c.State)
 			}
 		}
 	}
@@ -44,7 +44,7 @@ func TestUpdateState_Success(t *testing.T) {
 func TestUpdateState_FailWrongHost(t *testing.T) {
 	p := setupPlanner()
 
-	ok := p.UpdateState("node3", "web", StateRunning)
+	ok := p.UpdateState("node3", "web", config.StateRunning)
 	if ok {
 		t.Error("expected UpdateState to return false for unknown host")
 	}
@@ -53,7 +53,7 @@ func TestUpdateState_FailWrongHost(t *testing.T) {
 func TestUpdateState_FailWrongContainer(t *testing.T) {
 	p := setupPlanner()
 
-	ok := p.UpdateState("node1", "unknown", StateRunning)
+	ok := p.UpdateState("node1", "unknown", config.StateRunning)
 	if ok {
 		t.Error("expected UpdateState to return false for unknown container")
 	}

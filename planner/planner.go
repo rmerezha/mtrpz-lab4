@@ -5,41 +5,22 @@ import (
 	"sync"
 )
 
-type ContainerState = string
-
-const (
-	StateNew        ContainerState = "new"
-	StateCreated    ContainerState = "created"
-	StateRunning    ContainerState = "running"
-	StatePaused     ContainerState = "paused"
-	StateRestarting ContainerState = "restarting"
-	StateRemoving   ContainerState = "removing"
-	StateExited     ContainerState = "exited"
-	StateDead       ContainerState = "dead"
-)
-
-type ContainerStatus struct {
-	ManifestName string
-	Config       config.Container
-	State        ContainerState
-}
-
 type Planner struct {
 	mu      sync.RWMutex
-	storage map[string][]*ContainerStatus
+	storage map[string][]*config.ContainerStatus
 }
 
 func NewPlanner(manifests ...*config.Manifest) *Planner {
 	p := &Planner{
-		storage: make(map[string][]*ContainerStatus),
+		storage: make(map[string][]*config.ContainerStatus),
 	}
 
 	for _, m := range manifests {
 		for _, c := range m.Containers {
-			cs := &ContainerStatus{
+			cs := &config.ContainerStatus{
 				ManifestName: m.Name,
 				Config:       c,
-				State:        StateCreated,
+				State:        config.StateCreated,
 			}
 			p.storage[c.Host] = append(p.storage[c.Host], cs)
 		}
@@ -47,7 +28,7 @@ func NewPlanner(manifests ...*config.Manifest) *Planner {
 	return p
 }
 
-func (p *Planner) UpdateState(host, containerName string, newState ContainerState) bool {
+func (p *Planner) UpdateState(host, containerName string, newState config.ContainerState) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -65,11 +46,11 @@ func (p *Planner) UpdateState(host, containerName string, newState ContainerStat
 	return false
 }
 
-func (p *Planner) ListContainersByHost(host string) []*ContainerStatus {
+func (p *Planner) ListContainersByHost(host string) []*config.ContainerStatus {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	return append([]*ContainerStatus(nil), p.storage[host]...)
+	return append([]*config.ContainerStatus(nil), p.storage[host]...)
 }
 
 func (p *Planner) AddManifest(m *config.Manifest) {
@@ -77,10 +58,10 @@ func (p *Planner) AddManifest(m *config.Manifest) {
 	defer p.mu.Unlock()
 
 	for _, c := range m.Containers {
-		cs := &ContainerStatus{
+		cs := &config.ContainerStatus{
 			ManifestName: m.Name,
 			Config:       c,
-			State:        StateNew,
+			State:        config.StateNew,
 		}
 		p.storage[c.Host] = append(p.storage[c.Host], cs)
 	}
@@ -95,7 +76,7 @@ func (p *Planner) MarkManifestRemoving(name string) bool {
 	for _, containers := range p.storage {
 		for _, cs := range containers {
 			if cs.ManifestName == name {
-				cs.State = StateRemoving
+				cs.State = config.StateRemoving
 				found = true
 			}
 		}
@@ -104,11 +85,11 @@ func (p *Planner) MarkManifestRemoving(name string) bool {
 	return found
 }
 
-func (p *Planner) ListContainersByManifest(name string) []*ContainerStatus {
+func (p *Planner) ListContainersByManifest(name string) []*config.ContainerStatus {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	var result []*ContainerStatus
+	var result []*config.ContainerStatus
 	for _, containers := range p.storage {
 		for _, cs := range containers {
 			if name == "" || cs.ManifestName == name {
