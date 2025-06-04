@@ -21,7 +21,6 @@ type ContainerStatus struct {
 	ManifestName string
 	Config       config.Container
 	State        ContainerState
-	Reason       string
 }
 
 type Planner struct {
