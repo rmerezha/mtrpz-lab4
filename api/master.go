@@ -131,6 +131,35 @@ func (s *Server) handleManifestUp(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+func (s *Server) handleManifestDown(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Manifest string `json:"manifest"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid JSON", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	if req.Manifest == "" {
+		http.Error(w, "missing manifest name", http.StatusBadRequest)
+		return
+	}
+
+	ok := s.Planner.MarkManifestRemoving(req.Manifest)
+	if !ok {
+		http.Error(w, "manifest not found", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/state", withAuth(s.Auth, s.handleUpdateState))
 	mux.HandleFunc("/api/v1/container", withAuth(s.Auth, s.handleListContainers))
