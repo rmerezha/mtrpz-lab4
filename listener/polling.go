@@ -102,6 +102,7 @@ func (pl *PollingListener) applyState(cs config.ContainerStatus) {
 		if err := pl.Runner.Run(cs.Config); err != nil {
 			log.Printf("Runner.Run error for %s: %v", name, err)
 		}
+		cs.State = config.StateRunning
 	case config.StatePaused:
 		// TODO
 		log.Println("not implemented yet")
