@@ -17,17 +17,17 @@ type StateWatcherListener struct {
 	Host         string
 	Runner       runner.Runner
 	mu           sync.Mutex
-	store        *ContainerStateStore
+	Store        *ContainerStateStore
 	pollInterval time.Duration
 	Token        string
 }
 
-func NewStateWatcherListener(masterURL, host string, r runner.Runner, interval time.Duration, token string) *StateWatcherListener {
+func NewStateWatcherListener(masterURL, host string, r runner.Runner, interval time.Duration, token string, store *ContainerStateStore) *StateWatcherListener {
 	return &StateWatcherListener{
 		MasterURL:    masterURL,
 		Host:         host,
 		Runner:       r,
-		store:        NewContainerStateStore(),
+		Store:        store,
 		pollInterval: interval,
 		Token:        token,
 	}

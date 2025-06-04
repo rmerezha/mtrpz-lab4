@@ -16,18 +16,18 @@ type PollingListener struct {
 	Runner    runner.Runner
 
 	mu           sync.Mutex
-	store        *ContainerStateStore
+	Store        *ContainerStateStore
 	pollInterval time.Duration
 
 	Token string
 }
 
-func NewPollingListener(masterURL, host string, r runner.Runner, interval time.Duration, token string) *PollingListener {
+func NewPollingListener(masterURL, host string, r runner.Runner, interval time.Duration, token string, store *ContainerStateStore) *PollingListener {
 	return &PollingListener{
 		MasterURL:    masterURL,
 		Host:         host,
 		Runner:       r,
-		store:        NewContainerStateStore(),
+		Store:        store,
 		pollInterval: interval,
 		Token:        token,
 	}
