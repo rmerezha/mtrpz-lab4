@@ -85,3 +85,22 @@ func TestListContainersByHost_Empty(t *testing.T) {
 		t.Errorf("expected 0 containers, got %d", len(list))
 	}
 }
+
+func TestAddManifest(t *testing.T) {
+	p := NewPlanner()
+
+	m := &config.Manifest{
+		Name: "monitoring",
+		Containers: []config.Container{
+			{Name: "prometheus", Host: "node1", Image: "prom/prometheus"},
+			{Name: "grafana", Host: "node1", Image: "grafana/grafana"},
+		},
+	}
+
+	p.AddManifest(m)
+
+	cs := p.ListContainersByHost("node1")
+	if len(cs) != 2 {
+		t.Fatalf("expected 2 containers, got %d", len(cs))
+	}
+}

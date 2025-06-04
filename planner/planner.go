@@ -70,3 +70,17 @@ func (p *Planner) ListContainersByHost(host string) []*ContainerStatus {
 
 	return append([]*ContainerStatus(nil), p.storage[host]...)
 }
+
+func (p *Planner) AddManifest(m *config.Manifest) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	for _, c := range m.Containers {
+		cs := &ContainerStatus{
+			ManifestName: m.Name,
+			Config:       c,
+			State:        StateCreated,
+		}
+		p.storage[c.Host] = append(p.storage[c.Host], cs)
+	}
+}
