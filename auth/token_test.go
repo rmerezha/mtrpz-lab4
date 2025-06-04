@@ -24,6 +24,11 @@ func TestManager_TokenLifecycle(t *testing.T) {
 		t.Fatalf("failed to generate token: %v", err)
 	}
 
+	const expectedLength = 64
+	if len(token) != expectedLength {
+		t.Errorf("token length = %d; want %d", len(token), expectedLength)
+	}
+
 	if err := manager.AddToken(token); err != nil {
 		t.Fatalf("failed to add token: %v", err)
 	}
