@@ -58,12 +58,22 @@ func (p *Planner) AddManifest(m *config.Manifest) {
 	defer p.mu.Unlock()
 
 	for _, c := range m.Containers {
-		cs := &config.ContainerStatus{
-			ManifestName: m.Name,
-			Config:       c,
-			State:        config.StateNew,
+		exists := false
+		containersOnHost := p.storage[c.Host]
+		for _, cs := range containersOnHost {
+			if cs.ManifestName == m.Name && cs.Config.Name == c.Name {
+				exists = true
+				break
+			}
 		}
-		p.storage[c.Host] = append(p.storage[c.Host], cs)
+		if !exists {
+			cs := &config.ContainerStatus{
+				ManifestName: m.Name,
+				Config:       c,
+				State:        config.StateNew,
+			}
+			p.storage[c.Host] = append(p.storage[c.Host], cs)
+		}
 	}
 }
 
