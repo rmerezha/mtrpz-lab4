@@ -3,7 +3,6 @@ package auth_test
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/rmerezha/mtrpz-lab4/auth"
@@ -99,7 +98,8 @@ func TestManager_TokenPersists(t *testing.T) {
 		t.Fatalf("failed to read file: %v", err)
 	}
 
-	if !strings.Contains(string(data), token) {
-		t.Errorf("expected token to be persisted in file")
+	expected := token + "\n"
+	if string(data) != expected {
+		t.Errorf("file content = %q; want %q", string(data), expected)
 	}
 }
