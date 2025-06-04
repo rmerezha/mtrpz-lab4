@@ -8,6 +8,7 @@ import (
 type ContainerState = string
 
 const (
+	StateNew        ContainerState = "new"
 	StateCreated    ContainerState = "created"
 	StateRunning    ContainerState = "running"
 	StatePaused     ContainerState = "paused"
