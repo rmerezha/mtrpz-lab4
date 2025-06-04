@@ -24,9 +24,9 @@ func (s *Server) handleUpdateState(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Host          string `json:"host"`
-		ContainerName string `json:"name"`
-		State         string `json:"state"`
+		Host          string                `json:"host"`
+		ContainerName string                `json:"name"`
+		State         config.ContainerState `json:"state"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -80,17 +80,17 @@ func (s *Server) handleContainerAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var targetState planner.ContainerState
+	var targetState config.ContainerState
 
 	switch req.Action {
 	case "stop":
-		targetState = planner.StateExited
+		targetState = config.StateExited
 	case "kill":
-		targetState = planner.StateDead
+		targetState = config.StateDead
 	case "restart":
-		targetState = planner.StateRestarting
+		targetState = config.StateRestarting
 	case "rm":
-		targetState = planner.StateRemoving
+		targetState = config.StateRemoving
 	default:
 		http.Error(w, "unsupported action", http.StatusBadRequest)
 		return
