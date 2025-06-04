@@ -12,8 +12,9 @@ import (
 )
 
 type Server struct {
-	Planner *planner.Planner
-	Auth    *auth.Manager
+	Planner  *planner.Planner
+	Auth     *auth.Manager
+	Password string
 }
 
 func (s *Server) handleUpdateState(w http.ResponseWriter, r *http.Request) {
@@ -182,6 +183,47 @@ func (s *Server) handleManifestPS(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) handleGenerateToken(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Password string `json:"password"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid JSON body", http.StatusBadRequest)
+		return
+	}
+
+	if req.Password != s.Password {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	token, err := s.Auth.GenerateToken()
+	if err != nil {
+		http.Error(w, "failed to generate token", http.StatusInternalServerError)
+		return
+	}
+
+	if err := s.Auth.AddToken(token); err != nil {
+		http.Error(w, "failed to store token", http.StatusInternalServerError)
+		return
+	}
+
+	resp := struct {
+		Token string `json:"token"`
+	}{
+		Token: token,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(resp)
+}
+
 func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/state", withAuth(s.Auth, s.handleUpdateState))
 	mux.HandleFunc("/api/v1/container", withAuth(s.Auth, s.handleListContainers))
@@ -189,4 +231,5 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/manifest/up", withAuth(s.Auth, s.handleManifestUp))
 	mux.HandleFunc("/api/v1/manifest/down", withAuth(s.Auth, s.handleManifestDown))
 	mux.HandleFunc("/api/v1/manifest/ps", withAuth(s.Auth, s.handleManifestPS))
+	mux.HandleFunc("/api/v1/token", s.handleGenerateToken)
 }
