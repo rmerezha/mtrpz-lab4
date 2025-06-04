@@ -63,3 +63,10 @@ func (p *Planner) UpdateState(host, containerName string, newState ContainerStat
 	}
 	return false
 }
+
+func (p *Planner) ListContainersByHost(host string) []*ContainerStatus {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	return append([]*ContainerStatus(nil), p.storage[host]...)
+}
