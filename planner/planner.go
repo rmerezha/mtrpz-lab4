@@ -45,3 +45,21 @@ func NewPlanner(manifests ...*config.Manifest) *Planner {
 	}
 	return p
 }
+
+func (p *Planner) UpdateState(host, containerName string, newState ContainerState) bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	containers, ok := p.storage[host]
+	if !ok {
+		return false
+	}
+
+	for _, cs := range containers {
+		if cs.Config.Name == containerName {
+			cs.State = newState
+			return true
+		}
+	}
+	return false
+}
