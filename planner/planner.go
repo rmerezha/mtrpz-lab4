@@ -103,3 +103,18 @@ func (p *Planner) MarkManifestRemoving(name string) bool {
 
 	return found
 }
+
+func (p *Planner) ListContainersByManifest(name string) []*ContainerStatus {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	var result []*ContainerStatus
+	for _, containers := range p.storage {
+		for _, cs := range containers {
+			if name == "" || cs.ManifestName == name {
+				result = append(result, cs)
+			}
+		}
+	}
+	return result
+}

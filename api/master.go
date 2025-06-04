@@ -160,10 +160,33 @@ func (s *Server) handleManifestDown(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (s *Server) handleManifestPS(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Manifest string `json:"manifest"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	result := s.Planner.ListContainersByManifest(req.Manifest)
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+		http.Error(w, "failed to encode response", http.StatusInternalServerError)
+	}
+}
+
 func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/state", withAuth(s.Auth, s.handleUpdateState))
 	mux.HandleFunc("/api/v1/container", withAuth(s.Auth, s.handleListContainers))
 	mux.HandleFunc("/api/v1/container/action", withAuth(s.Auth, s.handleContainerAction))
 	mux.HandleFunc("/api/v1/manifest/up", withAuth(s.Auth, s.handleManifestUp))
 	mux.HandleFunc("/api/v1/manifest/down", withAuth(s.Auth, s.handleManifestDown))
+	mux.HandleFunc("/api/v1/manifest/ps", withAuth(s.Auth, s.handleManifestPS))
 }
