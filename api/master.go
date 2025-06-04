@@ -165,4 +165,5 @@ func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/container", withAuth(s.Auth, s.handleListContainers))
 	mux.HandleFunc("/api/v1/container/action", withAuth(s.Auth, s.handleContainerAction))
 	mux.HandleFunc("/api/v1/manifest/up", withAuth(s.Auth, s.handleManifestUp))
+	mux.HandleFunc("/api/v1/manifest/down", withAuth(s.Auth, s.handleManifestDown))
 }
