@@ -82,7 +82,9 @@ func (m *Manager) LoadFromFile() error {
 	for scanner.Scan() {
 		tok := strings.TrimSpace(scanner.Text())
 		if tok != "" {
-			m.tokens[tok] = struct{}{}
+			if _, exists := m.tokens[tok]; !exists {
+				m.tokens[tok] = struct{}{}
+			}
 		}
 	}
 
