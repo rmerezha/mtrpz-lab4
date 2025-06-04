@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"io"
+	"log"
 	"net/http"
 	"os"
 )
@@ -31,12 +33,11 @@ func handleManifest(args []string) {
 		fmt.Println("-token flag is required")
 		os.Exit(3)
 	}
+	manifestData, err := os.ReadFile(file)
+	checkErr(err)
 
 	switch cmd {
 	case "up":
-		manifestData, err := os.ReadFile(file)
-		checkErr(err)
-
 		req, _ := http.NewRequest("POST", url+"/api/v1/manifest/up", bytes.NewReader(manifestData))
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("Content-Type", "application/x-yaml")
@@ -44,7 +45,13 @@ func handleManifest(args []string) {
 		fmt.Println("Manifest uploaded", resp.Status)
 
 	case "down":
-		body, _ := json.Marshal(map[string]string{"manifest": file})
+		var parsed struct {
+			Name string `yaml:"name"`
+		}
+		if err := yaml.Unmarshal(manifestData, &parsed); err != nil {
+			log.Fatalf("failed to parse YAML: %v", err)
+		}
+		body, _ := json.Marshal(map[string]string{"manifest": parsed.Name})
 		req, _ := http.NewRequest("POST", url+"/api/v1/manifest/down", bytes.NewReader(body))
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("Content-Type", "application/json")
@@ -52,13 +59,19 @@ func handleManifest(args []string) {
 		fmt.Println("Manifest down", resp.Status)
 
 	case "ps":
-		body, _ := json.Marshal(map[string]string{"manifest": file})
+		var parsed struct {
+			Name string `yaml:"name"`
+		}
+		if err := yaml.Unmarshal(manifestData, &parsed); err != nil {
+			log.Fatalf("failed to parse YAML: %v", err)
+		}
+		body, _ := json.Marshal(map[string]string{"manifest": parsed.Name})
 		req, _ := http.NewRequest("POST", url+"/api/v1/manifest/ps", bytes.NewReader(body))
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("Content-Type", "application/json")
 		resp := doRequest(req)
 		data, _ := io.ReadAll(resp.Body)
-		fmt.Println(string(data))
+		printContainerListJSON(data)
 
 	default:
 		fmt.Println("unknown manifest subcommand")

@@ -17,17 +17,17 @@ type StateWatcherListener struct {
 	Host         string
 	Runner       runner.Runner
 	mu           sync.Mutex
-	store        *ContainerStateStore
+	Store        *ContainerStateStore
 	pollInterval time.Duration
 	Token        string
 }
 
-func NewStateWatcherListener(masterURL, host string, r runner.Runner, interval time.Duration, token string) *StateWatcherListener {
+func NewStateWatcherListener(masterURL, host string, r runner.Runner, interval time.Duration, token string, store *ContainerStateStore) *StateWatcherListener {
 	return &StateWatcherListener{
 		MasterURL:    masterURL,
 		Host:         host,
 		Runner:       r,
-		store:        NewContainerStateStore(),
+		Store:        store,
 		pollInterval: interval,
 		Token:        token,
 	}
@@ -49,8 +49,8 @@ func (sw *StateWatcherListener) Listen(stopCh <-chan struct{}) {
 
 func (sw *StateWatcherListener) checkAndReport() {
 	sw.mu.Lock()
-	containerNames := make([]string, 0, len(sw.store.states))
-	for name := range sw.store.states {
+	containerNames := make([]string, 0, len(sw.Store.states))
+	for name := range sw.Store.states {
 		containerNames = append(containerNames, name)
 	}
 	sw.mu.Unlock()
@@ -65,9 +65,9 @@ func (sw *StateWatcherListener) checkAndReport() {
 		state := config.ContainerState(stateStr)
 
 		sw.mu.Lock()
-		prevState, known := sw.store.Get(name)
+		prevState, known := sw.Store.Get(name)
 		if !known || prevState != state {
-			sw.store.Set(name, state)
+			sw.Store.Set(name, state)
 			sw.mu.Unlock()
 
 			sw.sendStateUpdate(name, state)

@@ -32,11 +32,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	store := listener.NewContainerStateStore()
 	globalListener := listener.GlobalListener{
 		Listeners: []listener.Listener{
-			listener.NewPollingListener(*masterUrl, *host, runner, *interval, *token),
-			listener.NewStateWatcherListener(*masterUrl, *host, runner, *interval, *token),
+			listener.NewPollingListener(*masterUrl, *host, runner, *interval, *token, store),
+			listener.NewStateWatcherListener(*masterUrl, *host, runner, *interval, *token, store),
 		},
 	}
 

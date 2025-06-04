@@ -14,10 +14,10 @@ func handleContainer(args []string) {
 		os.Exit(1)
 	}
 	cmd := args[0]
-	flags := parseFlags(args[1:], []string{"-f", "-c", "--url", "--token"})
-	host, ok := flags["-f"]
+	flags := parseFlags(args[1:], []string{"-h", "-c", "--url", "--token"})
+	host, ok := flags["-h"]
 	if !ok {
-		fmt.Println("-f flag is required")
+		fmt.Println("-h flag is required")
 		os.Exit(3)
 	}
 	container, ok := flags["-c"]

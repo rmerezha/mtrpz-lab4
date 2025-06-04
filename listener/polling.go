@@ -16,18 +16,18 @@ type PollingListener struct {
 	Runner    runner.Runner
 
 	mu           sync.Mutex
-	store        *ContainerStateStore
+	Store        *ContainerStateStore
 	pollInterval time.Duration
 
 	Token string
 }
 
-func NewPollingListener(masterURL, host string, r runner.Runner, interval time.Duration, token string) *PollingListener {
+func NewPollingListener(masterURL, host string, r runner.Runner, interval time.Duration, token string, store *ContainerStateStore) *PollingListener {
 	return &PollingListener{
 		MasterURL:    masterURL,
 		Host:         host,
 		Runner:       r,
-		store:        NewContainerStateStore(),
+		Store:        store,
 		pollInterval: interval,
 		Token:        token,
 	}
@@ -81,10 +81,10 @@ func (pl *PollingListener) checkAndApply() {
 	defer pl.mu.Unlock()
 
 	for _, cs := range containers {
-		prevState, known := pl.store.Get(cs.Config.Name)
+		prevState, known := pl.Store.Get(cs.Config.Name)
 		if !known || prevState != cs.State {
 			log.Printf("PollingListener: container %s state changed from %s to %s", cs.Config.Name, prevState, cs.State)
-			pl.store.Set(cs.Config.Name, cs.State)
+			pl.Store.Set(cs.Config.Name, cs.State)
 
 			pl.applyState(cs)
 		}
@@ -96,12 +96,13 @@ func (pl *PollingListener) applyState(cs config.ContainerStatus) {
 
 	switch cs.State {
 	case config.StateNew:
-		if err := pl.Runner.PullImage(name); err != nil {
-			log.Printf("PollingListener: failed to pull image: %v", err)
+		if err := pl.Runner.PullImage(cs.Config.Image); err != nil {
+			log.Printf("Runner.PullImage error for %s: %v", name, err)
 		}
 		if err := pl.Runner.Run(cs.Config); err != nil {
 			log.Printf("Runner.Run error for %s: %v", name, err)
 		}
+		cs.State = config.StateRunning
 	case config.StatePaused:
 		// TODO
 		log.Println("not implemented yet")
