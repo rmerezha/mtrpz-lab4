@@ -13,19 +13,18 @@ type Server struct {
 	Auth    *auth.Manager
 }
 
-type StateUpdateRequest struct {
-	Host          string `json:"host"`
-	ContainerName string `json:"name"`
-	State         string `json:"state"`
-}
-
 func (s *Server) handleUpdateState(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var req StateUpdateRequest
+	var req struct {
+		Host          string `json:"host"`
+		ContainerName string `json:"name"`
+		State         string `json:"state"`
+	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid JSON body", http.StatusBadRequest)
 		return
@@ -60,7 +59,49 @@ func (s *Server) handleListContainers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) handleContainerAction(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	var req struct {
+		Action    string `json:"action"`
+		Host      string `json:"host"`
+		Container string `json:"container"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	var targetState planner.ContainerState
+
+	switch req.Action {
+	case "stop":
+		targetState = planner.StateExited
+	case "kill":
+		targetState = planner.StateDead
+	case "restart":
+		targetState = planner.StateRestarting
+	case "rm":
+		targetState = planner.StateRemoving
+	default:
+		http.Error(w, "unsupported action", http.StatusBadRequest)
+		return
+	}
+
+	if ok := s.Planner.UpdateState(req.Host, req.Container, targetState); !ok {
+		http.Error(w, "container not found", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/state", withAuth(s.Auth, s.handleUpdateState))
 	mux.HandleFunc("/api/v1/container", withAuth(s.Auth, s.handleListContainers))
+	mux.HandleFunc("/api/v1/container/action", withAuth(s.Auth, s.handleContainerAction))
 }
