@@ -71,7 +71,7 @@ func handleManifest(args []string) {
 		req.Header.Set("Content-Type", "application/json")
 		resp := doRequest(req)
 		data, _ := io.ReadAll(resp.Body)
-		fmt.Println(string(data))
+		printContainerListJSON(data)
 
 	default:
 		fmt.Println("unknown manifest subcommand")
