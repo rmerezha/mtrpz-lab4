@@ -21,7 +21,8 @@ func handleToken(args []string) {
 	fmt.Scanln(&pass)
 
 	body, _ := json.Marshal(map[string]string{"password": pass})
-	req, _ := http.NewRequest("POST", url+"/api/v1/token", bytes.NewReader(body))
+	req, err := http.NewRequest("POST", url+"/api/v1/token", bytes.NewReader(body))
+	checkErr(err)
 	req.Header.Set("Content-Type", "application/json")
 	resp := doRequest(req)
 	data, _ := io.ReadAll(resp.Body)

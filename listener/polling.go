@@ -95,7 +95,7 @@ func (pl *PollingListener) applyState(cs config.ContainerStatus) {
 	name := cs.Config.Name
 
 	switch cs.State {
-	case config.StateCreated, config.StateRunning:
+	case config.StateNew:
 		if err := pl.Runner.Run(cs.Config); err != nil {
 			log.Printf("Runner.Run error for %s: %v", name, err)
 		}
